@@ -7,7 +7,7 @@ This script was made in order to try and produce small, sharable GIFs that came
 out of an NLE much faster - There's no hard and fast way to generate small GIFs
 (as it does depend on the content), but this was my quick and easy way to do it.
 
-## gitlab_users.epp
+## gitlab_users.epp (python via puppet template)
 A Puppet template that I created to:
 
 * Generate a Python script to then;
