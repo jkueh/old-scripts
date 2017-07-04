@@ -1,0 +1,80 @@
+<%- |String $gitlab_private_token = "" | -%>
+<%- if $gitlab_private_token != "" { -%>
+#!/usr/bin/env python3.5
+
+################################################################
+# This script builds the SSH keys for all users in a group.
+# This script relies on some Python 3 specific implementations.
+################################################################
+
+import urllib.request
+import json
+import string    # Used for safeString()
+
+API_URL = "https://gitlab.chromatix.com.au/api/v3"
+TOKEN_REF_STRING = "GITLAB_PRIVATE_TOKEN"
+
+def getResponse(req):
+  # Gets the response body as decoded json from a request object.
+  return json.loads(
+    urllib.request.urlopen(req).read().decode('utf-8')
+  )
+
+def getRequest(endpoint):
+  req = urllib.request.Request("%s/%s" % (API_URL, endpoint))
+  req.add_header('PRIVATE-TOKEN', "<%= $gitlab_private_token %>")
+  return req
+
+def getKeysForUser(id):
+  req = getRequest("users/%i/keys" % id)
+  return getResponse(req)
+
+# Taken from: https://gist.github.com/seanh/93666
+# Amended to not include brackets, or periods.
+def safeString(s):
+  valid_chars = "-_%s%s" % (string.ascii_letters, string.digits)
+  safe_string = ''.join(c for c in s if c in valid_chars)
+  safe_string = safe_string.replace(' ','_') # I don't like spaces in filenames.
+  return safe_string.lower()
+
+def processUserMembership(container_type, users, container):
+  members = getResponse(getRequest("%s/%i/members" % (
+    container_type,
+    container['id']
+  )))
+  for member in members:
+    for user in users:
+      if user['username'] == member['username']:
+        user['member_of'].append(container['path'])
+
+# Step 1 is the list of users
+users = []
+for user in getResponse(getRequest("users")):
+  if user['state'] == "active":
+    user['member_of'] = []
+    users.append(user)
+
+# Step 2 - Process group memberships
+for group in getResponse(getRequest("groups")):
+  processUserMembership("groups", users, group)
+
+# Step 3 - Process project memberships
+for project in getResponse(getRequest("projects/all")):
+  processUserMembership("projects", users, project)
+
+print("gitlab_users:")
+for user in users:
+  user_keys = getKeysForUser(user['id'])
+  if len(user_keys) <= 0:
+    continue
+  print("  %s:" % user['username'])
+  print("    membership:")
+  for membership in user['member_of']:
+    print("      - %s" % membership)
+  print("    keys:")
+  for key in user_keys:
+    key_data = key['key'].split(" ")
+    print("      \"%i-%s\":" % (key['id'], safeString(key['title']) ))
+    print("        key_type: '%s'" % key_data[0])
+    print("        key: '%s'" % key_data[1])
+<%- } -%>

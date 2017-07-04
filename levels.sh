@@ -36,7 +36,10 @@ setVolume() {
 updateLevel() {
 	# Updates $LEVEL to represent the current level.
 	AWKINDEX=3
-	LEVEL="$("${AMIXER}" -c 0 get "${DEVICE}" | grep '[%]' | head -n 1 | awk '{print $'${AWKINDEX}'}')"
+	LEVEL="$("${AMIXER}" -c 0 get "${DEVICE}" | \
+		grep '[%]' | \
+		head -n 1 | \
+		awk '{print $'${AWKINDEX}'}')"
 	CLEVEL="${LEVEL}"
 }
 
