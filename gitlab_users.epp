@@ -11,7 +11,7 @@ import urllib.request
 import json
 import string    # Used for safeString()
 
-API_URL = "https://gitlab.chromatix.com.au/api/v3"
+API_URL = "https://gitlab.com/api/v3"
 TOKEN_REF_STRING = "GITLAB_PRIVATE_TOKEN"
 
 def getResponse(req):
